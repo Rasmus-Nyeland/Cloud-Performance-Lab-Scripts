@@ -365,10 +365,14 @@ if ($UseDeviceAuthentication) { $connectArgs['UseDeviceAuthentication'] = $true 
 
 function Connect-AzureSafely {
     param([hashtable]$ConnectArgs)
+    # Az.Accounts 3+ prompts for a subscription after sign-in; the script walks every subscription itself.
+    # Process scope leaves the user's saved Az config untouched. Older Az.Accounts has no such setting.
+    try { Update-AzConfig -LoginExperienceV2 Off -Scope Process -ErrorAction Stop | Out-Null } catch {}
     try {
         Connect-AzAccount @ConnectArgs -ErrorAction Stop | Out-Null
     } catch {
-        Write-Error "Azure sign-in failed: $($_.Exception.Message)`nIf you don't have a browser available, re-run with -UseDeviceAuthentication."
+        $hint = if ($ConnectArgs.ContainsKey('UseDeviceAuthentication')) { '' } else { "`nIf you don't have a browser available, re-run with -UseDeviceAuthentication." }
+        Write-Error "Azure sign-in failed: $($_.Exception.Message)$hint"
         if ($transcriptPath) { try { Stop-Transcript | Out-Null } catch {} }
         exit 1
     }
@@ -518,6 +522,8 @@ foreach ($subscription in $subscriptions) {
 
         foreach ($vm in $vms) {
             $processedVMs++
+            # Autoscaling (e.g. AKS node pools) can add VMs after the initial count
+            if ($processedVMs -gt $totalVMs) { $totalVMs = $processedVMs }
             $percentComplete = if ($totalVMs -gt 0) { [math]::Round(($processedVMs / $totalVMs) * 100, 2) } else { 100 }
 
             $powerState = if ($vm.PowerState) { $vm.PowerState } else { "Unknown" }
