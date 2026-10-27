@@ -578,6 +578,8 @@ foreach ($subscription in $subscriptions) {
                 Zone                      = ($vm.Zones -join ';')
                 AvailabilitySet           = if ($vm.AvailabilitySetReference.Id) { ($vm.AvailabilitySetReference.Id -split '/')[-1] } else { '' }
                 ScaleSet                  = if ($vm.VirtualMachineScaleSet.Id) { ($vm.VirtualMachineScaleSet.Id -split '/')[-1] } else { '' }
+                # Set on VM-type node pools (aks-managed-poolName) and Node Auto Provisioning nodes (karpenter.sh_nodepool)
+                AksNodePool               = if ($vm.Tags) { @('aks-managed-poolName', 'karpenter.sh_nodepool') | ForEach-Object { $vm.Tags[$_] } | Where-Object { $_ } | Select-Object -First 1 } else { '' }
                 HyperVGeneration          = $null
                 SecurityType              = $vm.SecurityProfile.SecurityType
                 DiskControllerType        = $vm.StorageProfile.DiskControllerType

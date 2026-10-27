@@ -109,6 +109,7 @@ Every field below is written to the CSVs in plain text.
 | `MaxVMUncachedIOPSPercent`, `MaxVMUncachedMBpsPercent` | Peak use of the VM size's uncached disk IOPS and throughput caps |
 | `MaxDataDiskIOPSPercent`, `MaxDataDiskMBpsPercent` | Peak data disk IOPS and bandwidth consumed as a percentage of the disk caps |
 | `Zone`, `AvailabilitySet`, `ScaleSet` | Availability zone, availability set and Flexible scale set the VM belongs to |
+| `AksNodePool` | AKS node pool the VM belongs to, if it is an AKS node (see below) |
 | `HyperVGeneration`, `SecurityType`, `DiskControllerType` | VM generation (from the OS disk), Trusted Launch / confidential, SCSI or NVMe |
 | `TempDiskGiB` | Temp (resource) disk size of the current SKU; 0 means none |
 | `DataDiskCount`, `DiskSkus` | Number of data disks and the storage SKUs in use |
@@ -119,8 +120,14 @@ Every field below is written to the CSVs in plain text.
 
 Numbers are always written with a `.` decimal separator, whatever the machine's locale.
 
-VMs in **Uniform** scale sets, which includes AKS node pools, are not returned by the VM API
-and are not in the CSV. The script prints a warning listing those scale sets.
+VMs in **Uniform** scale sets, which includes AKS node pools backed by scale sets (the default),
+are not returned by the VM API and are not in the CSV. The script prints a warning listing those scale sets.
+
+AKS nodes that are standalone VMs, from node pools of type `VirtualMachines` and from Node Auto
+Provisioning (Karpenter), **are** in the CSV, with the pool name in `AksNodePool`. Don't resize
+these VMs one by one: AKS manages them and replaces nodes often, so they may have only hours of
+data (`MetricDays`). Right-size them by changing the node pool's VM size or the Node Auto
+Provisioning SKU requirements instead.
 
 **`VM_Availability_*.csv`** (only with `-IncludeAvailability`)
 
